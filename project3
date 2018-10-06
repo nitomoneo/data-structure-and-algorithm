@@ -1,0 +1,237 @@
+//HW3  Due: Friday (10/5) at 11:59PM
+
+//Dijkstra's algorithm 
+//Implemented with min-Heap
+//Time Complexity O((N + E ) log N)
+
+#include <iostream>
+#include <vector>
+#include <list>
+#include <fstream>
+using namespace std;
+class e_node { //stands for edge node
+public:
+	int nb;//the neighbor of a currently considered node
+	int weight; //weight of the edge to the above neighbor
+	e_node() {}//constructor
+};
+class rt_node { //rt stands for routing table
+public:
+	int cost;  //cost to a node
+	int from;  //the from node to this node
+	int checked;
+	int h_pos; //the postion in heap for this node
+	rt_node() { from = -1;  cost = 9999;  checked = 0; }
+};
+
+class h_node { //stands for heap_node
+public:
+	int id;
+	int cost;
+	h_node() { id = -1; cost = 9999; }
+	h_node(int i, int j) { id = i; cost = j; }
+	bool operator<(h_node h) { return (cost < h.cost); }
+};
+
+void set_up(vector<rt_node> &rt, vector<h_node> & heap, int &start);
+void select_node(vector<list<e_node>> & graph, vector<rt_node> & rt, vector<h_node> &heap);
+void neighbor_update(vector<list<e_node>> & graph, vector<rt_node> & rt, vector<h_node> & heap, int &s);
+
+int main() {
+	//Do not change code for main function
+	ifstream in("text1.txt");
+	int start;
+	in >> start;  //start is the source node for the algorithm
+	int n, e; //n: num of nodes ; e: num of edges
+	in >> n >> e;
+	list<e_node> le;
+	vector<list<e_node> > graph(n, le);
+	e_node e1;
+	int n1, n2, w;
+	for (int i = 0; i < e; i++) {
+		in >> n1 >> n2 >> w;
+		e1.nb = n2;
+		e1.weight = w;
+		graph[n1].push_back(e1);
+	}
+	in.close();
+	list<e_node>::iterator it;
+	/*
+	//debug
+	for (int i = 0; i < n; i++) {
+		it = graph[i].begin();
+		while (it != graph[i].end()) {
+			cout << "node:" << i << " " << "nb:" << (*it).nb << " " << "weight:" << " " << (*it).weight << endl;
+			it++;
+		}
+	}
+	*/
+	vector<rt_node> rt(n); //rt stands for routing table
+	vector<h_node> heap(n);
+
+	set_up(rt, heap, start);//initialize values
+	select_node(graph, rt, heap);
+
+	for (int i = 0; i < n; i++) {
+
+		cout << "cost from " << start << " to " << i << " is: " << rt[i].cost << "  from node is " << rt[i].from << endl;
+	}
+	getchar();
+	getchar();
+	return 0;
+}
+
+void adjust_up(vector<rt_node> &rt, vector<h_node> & heap, int m) {
+	int parent = (m - 1) / 2;
+	cout << "m" << m << endl;
+	cout << "parent"<< parent <<endl;
+	h_node a;
+	while (parent >= 0) {
+		if (heap[m].cost < heap[parent].cost) {
+			//swap heap[m]and heap[parent];
+			a = heap[parent];
+			heap[parent] = heap[m];
+			heap[m] = a;
+			cout << "heap[m].cost" << heap[m].cost << " " << "heap[m].id" << heap[m].id << endl; 
+			cout << "heap[parent].cost" << heap[parent].cost << " " << "heap[parent].id" << heap[parent].id << endl;
+			//update the h_pos in the routing table
+			rt[heap[m].id].h_pos = m;
+			rt[heap[parent].id].h_pos = parent;
+			cout << "rt[heap[m].id].h_pos" << rt[heap[m].id].h_pos << " " << "rt[heap[parent].id].h_pos" << rt[heap[parent].id].h_pos << endl;
+			parent = (parent - 1) / 2; // ??m?parent??,??????,?????index??????????????parent?
+			cout << "m:" << m << endl;
+			cout << "parent:" << parent << endl;
+		}
+		else break;
+	}
+}
+void set_up(vector<rt_node> &rt, vector<h_node> & heap, int &start) {
+    //Initialization values as you see fit
+	for (int i = 0; i < heap.size(); i++) {
+		heap[i].id = i;
+		//cout << "i:" <<i<< heap[i].id; //print-debug
+		rt[i].h_pos = i;
+		//cout << "i:" << i << rt[i].h_pos << endl; //print-debug
+	}
+
+	heap[start].cost = 0;
+	rt[start].cost = 0;
+	rt[start].from = start;
+	//cout << start << " " <<heap[start].id << " "<< heap[start].cost;
+	adjust_up(rt, heap, start); 
+	//debug
+	/*
+	for (int i = 0; i < heap.size(); i++) {
+		cout << "i:" << i << heap[i].id << endl; //print-debug
+		cout << "i:" << i << rt[i].h_pos << endl; //print-debug
+	}
+	*/
+}
+
+
+void neighbor_update(vector<list<e_node>> & graph, vector<rt_node> & rt, vector<h_node> & heap, int &s) {
+	//this function is to be invoked by select_node
+	list<e_node>::iterator it;
+	it = graph[s].begin();
+
+	while (it != graph[s].end()) {
+		int temp = rt[s].cost + (*it).weight;
+		cout << "temp:" << temp << endl;
+		cout << "neighbour:" << (*it).nb << " " << "neighbour weight:" << (*it).weight << endl;
+		cout << "neighbour cost:" << rt[(*it).nb].cost << endl;
+		if (rt[(*it).nb].cost > temp) {
+			rt[(*it).nb].cost = temp;
+			cout << "nb new cost:" << rt[(*it).nb].cost << endl;
+			rt[(*it).nb].from = heap[0].id;
+			cout << "nb from:" << rt[(*it).nb].from << endl;
+			heap[rt[(*it).nb].h_pos].cost = rt[(*it).nb].cost;
+			cout << "nb in the heap new cost:" << heap[rt[(*it).nb].h_pos].cost;
+			adjust_up(rt, heap, rt[(*it).nb].h_pos); 
+			// change s to rt[(*it).nb].h_pos; we try to find the shortest path. the graph store the weight of nb, and then use rt to track the position of heap;
+		}
+		it++;
+	}
+}
+
+void adjust_down(vector<rt_node> &rt, vector<h_node> & heap, int m) {
+	int left_child = 2 * m + 1;
+	int right_child = 2 * m + 2;
+	int n = heap.size() - 1;
+	h_node a, b;
+	while (left_child <= n && right_child <= n) {
+		if (heap[left_child].cost < heap[m].cost || heap[right_child].cost < heap[m].cost) {
+			if (heap[left_child].cost < heap[right_child].cost) {
+				//swap heap[m] and heap[left_child]
+				a = heap[left_child];
+				heap[left_child] = heap[m];
+				heap[m] = a;
+				//update the h_pos in the routing table
+				rt[heap[m].id].h_pos = m;
+				rt[heap[left_child].id].h_pos = left_child;
+				//m & left_child are index, not change. so we should exchange them by ourself
+				m = left_child;
+				left_child = 2 * m + 1;
+				right_child = 2 * m + 2;
+			}
+			else {
+				//swap heap[m] and heap[right_child]
+				b = heap[right_child];
+				heap[right_child] = heap[m];
+				heap[m] = b;
+				//update the h_pos in the routing table
+				rt[heap[m].id].h_pos = m;
+				rt[heap[right_child].id].h_pos = right_child;
+				m = right_child;
+				left_child = 2 * m + 1;
+				right_child = 2 * m + 2;
+			}
+		}
+		else break;
+	}
+}
+
+void pop_heap(vector<rt_node> & rt, vector<h_node> & heap) {
+	h_node temp;
+	heap[0] = heap[heap.size() - 1];
+	rt[heap[0].id].h_pos = 0; //change the last node to the first, remember to update its h_pos in the routing table
+	heap.pop_back();
+}
+
+void select_node(vector<list<e_node>> & graph, vector<rt_node> & rt, vector<h_node> &heap) {
+	//Continue to select an unvisited node with minimum cost, and doing some general update
+	//Invoke neighbor_udpate to possibly update neighbors
+	while (heap.size() != 0) {
+		rt[heap[0].id].checked = 1;
+		neighbor_update(graph, rt, heap, heap[0].id);
+		pop_heap(rt, heap);
+		adjust_down(rt, heap, 0); // change head[0].id (rt's id) -> 0 ; we sort the heap. so we should use the id of heap. 
+	}
+}
+/*
+//sample screenshot
+cost from 0 to 0 is: 0  from node is 0
+cost from 0 to 1 is : 7  from node is 2
+cost from 0 to 2 is : 4  from node is 0
+cost from 0 to 3 is : 10  from node is 1
+cost from 0 to 4 is : 14  from node is 3
+cost from 0 to 5 is : 9  from node is 1
+*/
+
+/*
+//sample input file text1.txt
+0
+6
+12
+0 5 16
+0 4 15
+0 2 4
+0 3 12
+0 1 9
+1 3 3
+1 5 2
+2 3 14
+2 1 3
+3 4 4
+4 5 1
+5 3 2
+*/
