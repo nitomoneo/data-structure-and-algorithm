@@ -1,0 +1,302 @@
+//CSE674 HW1
+//Due: 11:59PM, Saturday(9/15)
+
+#include <iostream>
+#include <list>
+//#include<time.h>
+
+using namespace std;
+
+
+class node {
+public:
+	int value;
+	node * next;
+	node * previous;
+	node(int i) { value = i; next = previous = nullptr; }
+	node() { next = previous = nullptr; }
+};
+
+class doubly_linked_list {
+public:
+	int num_nodes;
+	node * head;
+	node * tail;
+	doubly_linked_list() { num_nodes = 0; head = tail = nullptr; }
+	void make_random_list(int m, int n);
+	void print_forward();
+	void print_backward();
+	void insertion_sort();
+	int ct = 0;
+	//inplement the following three member functions:
+
+	void selection_sort(); //Sort the list using selection sort algorithm
+	
+						   //Recursively merge sort i numbers starting at node pointed by p
+	void merge_sort(node * p, int i);//in-place recursive merge sort
+
+
+									  //Merge i1 numbers starting at node pointed by p1 with i2 numbers
+									 //starting at node pointed by p2
+	void merge(node * p1, int i1, node * p2, int i2);
+	
+};
+
+void doubly_linked_list::make_random_list(int m, int n) {
+	//srand((unsigned)time(NULL));
+	for (int i = 0; i < m; i++) {
+		node * p1 = new node(rand() % n);
+		p1->previous = tail;
+		if (tail != nullptr) tail->next = p1;
+		tail = p1;
+		if (head == nullptr) head = p1;
+		num_nodes++;
+	}
+}
+
+void doubly_linked_list::print_forward() {
+	cout << endl;
+	node * p1 = head;
+	while (p1 != nullptr) {
+		cout << p1->value << " ";
+		p1 = p1->next;
+	}
+}
+
+void doubly_linked_list::print_backward() {
+	cout << endl;
+	node * p1 = tail;
+	while (p1 != nullptr) {
+		cout << p1->value << " ";
+		p1 = p1->previous;
+	}
+}
+
+void doubly_linked_list::insertion_sort() {
+	//Using insertion sort
+	if (head == nullptr || head->next == nullptr) return;
+	node * p1 = head->next, *p2;
+	int temp;
+	while (p1 != nullptr) {
+		p2 = p1;
+		temp = p1->value;
+		//cout << "value = " << p1->value << endl;
+		while (p2->previous != nullptr && temp < p2->previous->value) {
+			p2->value = p2->previous->value;
+			p2 = p2->previous;
+		}
+		p2->value = temp;
+		p1 = p1->next;
+	}
+}
+
+void doubly_linked_list::selection_sort() {
+	//Using selection sort - swap value
+	if (head == nullptr || head->next == nullptr) return;
+	node * p1 = head, * p_min, * p2;
+	int min;
+	while (p1->next != nullptr) {
+		p_min = p1;
+		min = p1->value;
+		p2 = p1->next;
+		while (p2 != nullptr) {
+			if (p2->value < min) {
+				p_min = p2;
+				min = p2->value;
+			}
+			p2 = p2->next;
+		}
+		p_min->value = p1->value;
+		p1->value = min;
+		p1 = p1->next;
+	}
+}
+
+ /*
+void doubly_linked_list::selection_sort() {
+	//Using selection sort - swap pointer
+	if (head == nullptr || head->next == nullptr) return;
+	node * p1 = head, * p2, * p3, * p4, * p5, * p_min;
+	int min;
+	while (p1->next != nullptr) {
+		p_min = p1;
+		min = p1->value;
+		p2 = p1->next;
+		while (p2 != nullptr) {
+			if (p2->value < min) {
+				p_min = p2;
+				min = p2->value;
+			}
+			p2 = p2->next;
+		}
+		p3 = p_min->previous;
+		p4 = p_min->next;
+		p5 = p1->previous;
+		if (p1 == head) {
+			head = p_min;
+			p_min->previous = nullptr;
+			p_min->next = p1;
+			p1->previous = p_min;
+			p3->next = p4;
+			p4->previous = p3;
+		}
+		else if(p_min == p1) {
+			p1 = p1->next;
+		}
+		else if (p_min->next == nullptr) {
+			p5->next = p_min;
+			p_min->previous = p5;
+			p_min->next = p1;
+			p1->previous = p_min;
+			p3->next = p4;
+			tail = p3;
+		}
+		else {
+			p5->next = p_min;
+			p_min->previous = p5;
+			p_min->next = p1;
+			p1->previous = p_min;
+			p3->next = p4;
+			p4->previous = p3;
+		}
+	}
+}
+
+*/
+void doubly_linked_list::merge_sort(node * p, int i){
+	if (i == 0 || i == 1) return;
+	int i1 = i / 2;
+	int i2 = i - i1;
+	node * start = p, *start2 = start;
+	node * prev;
+	//solve the start is head, which will cause prev=start->previous = nullptr, violate rules
+	for (int j = 0; j < i1; j++) {
+		start2 = start2->next;
+	}
+	if ((i == num_nodes) && start == head) {
+		prev = new node(0);
+		prev->next = start;
+		start->previous = prev;
+	}
+	else {
+		prev = start->previous;
+		start->previous = prev;
+	}
+	//node * prev = start->previous;
+	//start->previous = nullptr;
+	node * end = start2;
+	for (int k = 0; k < i2; k++) {
+		end = end->next;
+	}
+	merge_sort(start, i1);
+	merge_sort(start2, i2);
+	start = prev->next;
+	start2 = start;
+	for (int j = 0; j < i1; j++) {
+		start2 = start2->next;
+	}
+	merge(start, i1, start2, i2);
+
+	if (i == num_nodes) {
+		head = prev->next;
+		node * pre = nullptr;
+		node * cur = head;
+		for (int k = 0; k < num_nodes; k++) {
+			cur->previous = pre;
+			pre = cur;
+			cur = cur->next;
+		}
+		tail = pre;
+	}
+}
+                                    //p1->start1       p2->start2
+void doubly_linked_list::merge(node * p1, int i1,node* p2,int i2){
+	ct++;
+	node * prev = p1->previous;
+	
+	node * end = p2;
+	for (int k = 0; k < i2; k++) {
+		/*cout << ct << endl;
+		cout << i1 << endl;*/
+		end = end->next;
+	}
+	node * temporary_head = new node(10);
+	node * current = temporary_head;
+	
+	//use n1 and n2 to record #merge, so we can judge whether the seperate parts merge completely or not
+	int n1 = 0, n2 = 0;
+
+	//both i1 and i2 not merge completely
+	while (n1 < i1 && n2 < i2) {
+		if (p1->value < p2->value) {
+			current->next = p1;
+			p1->previous = current;
+			current = current->next;
+			p1 = p1->next;
+			n1++;
+		}
+		else {
+			current->next = p2;
+			p2->previous = current;
+			current = current->next;
+			p2 = p2->next;
+			n2++;
+		}
+	}
+	//i2 merge completely, but not i1
+	while (n1 < i1) {
+		p1->previous = current;
+		current->next = p1;
+		current = current->next;
+		p1 = p1->next;
+		n1++;
+
+	}
+	//i1 merge sompletely, but not i2
+	while (n2 < i2) {
+		p2->previous = current;
+		current->next = p2;
+		current = current->next;
+		p2 = p2->next;
+		n2++;
+	}
+	current->next = end;
+	if (end != nullptr) {
+		end->previous = current;
+		current->next = end;
+	}
+	prev->next = temporary_head->next;
+	temporary_head->next->previous = prev;	
+}
+
+
+int main() {
+
+	doubly_linked_list d1, d2;
+	
+	d1.make_random_list(30, 20);
+	d1.print_forward();
+	d1.print_backward();
+	
+	d1.insertion_sort();
+	d1.print_forward();
+	d1.print_backward();
+
+	d1.selection_sort();
+	d1.print_forward();
+	d1.print_backward();
+	
+	d2.make_random_list(40, 20);
+	d2.print_forward();
+	d2.print_backward();
+	
+	d2.merge_sort(d2.head, d2.num_nodes);
+	d2.print_forward();
+	d2.print_backward();
+	
+
+	getchar();
+	getchar();
+	return 0;
+
+}
